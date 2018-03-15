@@ -5,6 +5,7 @@
 
 /* "programs" */
 int hello_world ();
+int print_net ();
 int debug ();
 
 #define	hello_world_PROG_HELP	"Print 'Hello world'."

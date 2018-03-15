@@ -6,6 +6,7 @@
 #include <api/prog_info.h>
 #include <types/io.h>
 #include <kernel/errno.h>
+#include <kernel/net.h>
 
 /*! kernel stack */
 uint8 system_stack [ STACK_SIZE ];
@@ -34,9 +35,11 @@ void k_startup ()
 	kprintf ( "%s\n", system_info );
 
 	stdio_init (); /* initialize standard output devices */
+        net_init ("1234567890123456789012345678900000");
 
 	/* start desired program(s) */
 	hello_world ();
+        print_net();
 	debug ();
 
 	kprintf ( "\nSystem halted!\n" );
