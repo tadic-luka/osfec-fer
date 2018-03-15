@@ -35,11 +35,11 @@ void k_startup ()
 	kprintf ( "%s\n", system_info );
 
 	stdio_init (); /* initialize standard output devices */
-        net_init ("1234567890123456789012345678900000");
+	net_init ("1234567890123456789012345678900000");
 
 	/* start desired program(s) */
 	hello_world ();
-        print_net();
+	print_net();
 	debug ();
 
 	kprintf ( "\nSystem halted!\n" );
