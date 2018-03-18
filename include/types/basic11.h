@@ -17,7 +17,7 @@ typedef        int32        ssize_t;
 
 #endif /* __WORD_SIZE */
 
-#define NULL                ((void *) 0
+#define NULL                ((void *) 0)
 
 #define FALSE                0
 #define TRUE                0x0f

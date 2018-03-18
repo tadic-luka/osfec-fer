@@ -1,6 +1,7 @@
 /*! Hello world program */
 
 #include <stdio321.h>
+#include <api/prog_info123.h>
 
 int lab1_test ()
 {
