@@ -15,13 +15,15 @@
  *
  * =====================================================================================
  */
+#include <lib/string.h>
 void copy_to_RAM ()
 {
-	extern char kernel_code_LMA, kernel_end_addr, kernel_code_VMA;
-	char *ram = &kernel_code_VMA;
-	char *start = &kernel_code_LMA;
-	char *end = &kernel_end_addr;
-	while(start < end) {
-		*ram++= *start++;
-	}
+	extern char program_code_LMA, program_end_addr, program_code_VMA;
+	char *ram = &program_code_VMA;
+	char *start = &program_code_LMA;
+	char *end = &program_end_addr;
+	memcpy(ram, start, end - start); 
+	/*while(start < end) {*/
+		/**ram++= *start++;*/
+	/*}*/
 }

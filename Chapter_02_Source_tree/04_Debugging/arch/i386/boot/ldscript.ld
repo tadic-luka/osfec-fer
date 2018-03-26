@@ -7,16 +7,22 @@ ENTRY(arch_startup)
 SECTIONS {
 	.boot_code LOAD_ADDR :
 	{
-
 		/* instructions */
 		*?/boot/startup.asm.o ( * )
 		*?/boot/copy.o ( * )
+		*?/kernel/kprint.o ( *)
+		*?/kernel/startup.o ( * )
+		*?/kernel/net/net.o ( * )
+		*?/i386/descriptor.o ( * )
+		*?/drivers/vga_text.o ( * )
+		*?/lib/string.o ( * )
 	}
-	kernel_code_LMA = LOAD_ADDR + SIZEOF(.boot_code);
-	kernel_code_VMA = RAM_START;
-	.kernel_code RAM_START: AT(kernel_code_LMA)
+
+	program_code_LMA = LOAD_ADDR + SIZEOF(.boot_code);
+	program_code_VMA = RAM_START;
+	.program_code RAM_START: AT(program_code_LMA)
 	{
-		kernel_code_addr = .;
+		program_code_addr = .;
 
 		* ( .text *)
 	}
@@ -46,5 +52,5 @@ SECTIONS {
 #ifndef DEBUG
 	/DISCARD/ : { *(*) }
 #endif
-	kernel_end_addr = .;
+	program_end_addr = .;
 }
