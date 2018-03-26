@@ -17,8 +17,8 @@
  */
 void copy_to_RAM ()
 {
-	extern char kernel_code_LMA, kernel_end_addr;
-	char *ram = (char *)RAM_START;
+	extern char kernel_code_LMA, kernel_end_addr, kernel_code_VMA;
+	char *ram = &kernel_code_VMA;
 	char *start = &kernel_code_LMA;
 	char *end = &kernel_end_addr;
 	while(start < end) {
