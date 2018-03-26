@@ -5,21 +5,28 @@
 ENTRY(arch_startup)
 
 SECTIONS {
-	.code LOAD_ADDR :
+	.boot_code LOAD_ADDR :
+	{
+
+		/* instructions */
+		*?/boot/startup.asm.o ( * )
+		*?/boot/copy.o ( * )
+	}
+	kernel_code_LMA = LOAD_ADDR + SIZEOF(.boot_code);
+	kernel_code_VMA = RAM_START;
+	.kernel_code RAM_START: AT(kernel_code_LMA)
 	{
 		kernel_code_addr = .;
 
-		/* instructions */
-		*?/boot/startup.asm.o ( .text* )
-
-		*( .text* )
+		* ( .text *)
+	}
+	.rodata :
+	{
+		* ( .rodata *)
 	}
 	.data :
 	{
-		kernel_data_addr = .;
-
-		/* read only data (constants), initialized global variables */
-		* ( .rodata* .data* )
+		* ( .data *)
 	}
 	.bss :
 	{
@@ -27,6 +34,8 @@ SECTIONS {
 
 		. = ALIGN (4096);
 	}
+
+	system_stack = STACK_ADDR;
 
 	/*
 	 * what with other sections generated with gcc (various versions)?
@@ -37,6 +46,7 @@ SECTIONS {
 	 *   multiboot loader (QEMU is that)
 	 */
 
+	/DISCARD/ : { *( .eh_frame *) }
 #ifndef DEBUG
 	/DISCARD/ : { *(*) }
 #endif

@@ -9,7 +9,7 @@
 #include <kernel/net.h>
 
 /*! kernel stack */
-uint8 system_stack [ STACK_SIZE ];
+extern uint8 system_stack [ STACK_SIZE ];
 
 char system_info[] = 	OS_NAME ": " NAME_MAJOR ":" NAME_MINOR ", "
 			"Version: " VERSION " (" ARCH ")";

@@ -5,7 +5,7 @@
 #include <arch/multiboot.h>
 
 /* stack, startup function */
-.extern system_stack, k_startup, arch_descriptors_init
+.extern system_stack, k_startup, arch_descriptors_init, copy_to_RAM
 
 .section .text
 
@@ -27,14 +27,18 @@ multiboot_header:
 /* THE starting point */
 arch_startup:
 	/* stack pointer initialization */
-	mov	$(system_stack + STACK_SIZE), %esp
+	mov	$(system_stack), %esp
 
 	/* starting status register - EFLAGS register */
 	pushl	$0
 	popf
 
+	/* copy data to RAM */
+	call copy_to_RAM
+
 	/* set up GDT, IDT */
 	call	arch_descriptors_init
+
 
 	/* call starting kernel function */
 	call	k_startup

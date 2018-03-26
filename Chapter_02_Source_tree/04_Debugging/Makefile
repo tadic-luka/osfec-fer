@@ -34,7 +34,8 @@ CMACROS += $(DEVICES) 							\
 
 CMACROS += SYSTEM_MEMORY=$(SYSTEM_MEMORY)				\
 	STACK_SIZE=$(STACK_SIZE)					\
-	LOAD_ADDR=$(LOAD_ADDR)
+	LOAD_ADDR=$(LOAD_ADDR) STACK_ADDR=$(STACK_ADDR)			\
+	RAM_START=$(RAM_START)
 
 #------------------------------------------------------------------------------
 
