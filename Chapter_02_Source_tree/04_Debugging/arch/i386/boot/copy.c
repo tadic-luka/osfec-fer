@@ -22,8 +22,6 @@ void copy_to_RAM ()
 	char *start = &kernel_code_LMA;
 	char *end = &kernel_end_addr;
 	while(start < end) {
-		*ram= *start;
-		++start;
-		++ram;
+		*ram++= *start++;
 	}
 }
