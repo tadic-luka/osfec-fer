@@ -5,6 +5,7 @@
 
 /*! Kernel dynamic memory --------------------------------------------------- */
 #include <lib/ff_simple.h>
+#include <lib/m_alloc.h>
 #include <lib/gma.h>
 
 #if MEM_ALLOCATOR == FIRST_FIT
@@ -21,8 +22,14 @@
 #define	KMALLOC(size)			gma_alloc ( k_mpool, size )
 #define	KFREE(addr)			gma_free ( k_mpool, addr )
 
-#else /* memory allocator not selected! */
+#elif MEM_ALLOCATOR == M_ALLOC
 
+#define MEM_ALLOC_T m_mpool_t
+#define	K_MEM_INIT(segment, size)	m_init ( segment, size )
+#define	KMALLOC(size)			m_alloc ( k_mpool, size )
+#define	KFREE(addr)			m_free ( k_mpool, addr )
+
+#else /* memory allocator not selected! */
 #error	Dynamic memory manager not defined!
 
 #endif
