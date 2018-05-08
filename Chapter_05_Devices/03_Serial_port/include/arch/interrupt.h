@@ -8,7 +8,8 @@ void arch_init_interrupts ();
 void arch_register_interrupt_handler (
 	unsigned int inum,
 	void *handler,
-	void *device
+	void *device,
+	int priority
 );
 
 /*! Unregister handler function for particular interrupt number */

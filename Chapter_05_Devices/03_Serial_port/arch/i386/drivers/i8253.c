@@ -8,6 +8,7 @@
 
 #include <kernel/errno.h>
 
+int prio[INTERRUPTS];
 /*! timer device i8253, wrapper for arch_timer_t interface */
 arch_timer_t i8253 = (arch_timer_t)
 {
@@ -98,7 +99,7 @@ static void i8253_disable_interrupt ()
 /*! Register function for counter interrupts */
 static void i8253_register_interrupt ( void *handler )
 {
-	arch_register_interrupt_handler ( IRQ_TIMER, handler, &i8253 );
+	arch_register_interrupt_handler ( IRQ_TIMER, handler, &i8253, prio[IRQ_TIMER] );
 }
 
 #endif /* I8253 */

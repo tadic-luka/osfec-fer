@@ -14,6 +14,7 @@
 char system_info[] = 	OS_NAME ": " NAME_MAJOR ":" NAME_MINOR ", "
 			"Version: " VERSION " (" ARCH ")";
 
+int prio[INTERRUPTS];
 /* state of kernel features */
 uint kernel_features = FEATURE_SUPPORTED; /* initially set all to "on" state */
 
@@ -36,8 +37,8 @@ void k_startup ()
 	arch_init_interrupts ();
 
 	/* detect memory faults (qemu do not detect segment violations!) */
-	arch_register_interrupt_handler ( INT_MEM_FAULT, k_memory_fault, NULL );
-	arch_register_interrupt_handler ( INT_UNDEF_FAULT, k_memory_fault, NULL );
+	arch_register_interrupt_handler ( INT_MEM_FAULT, k_memory_fault, NULL, prio[INT_MEM_FAULT] );
+	arch_register_interrupt_handler ( INT_UNDEF_FAULT, k_memory_fault, NULL, prio[INT_MEM_FAULT] );
 
 	/* timer subsystem */
 	k_time_init ();

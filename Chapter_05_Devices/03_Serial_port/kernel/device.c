@@ -9,6 +9,7 @@
 #include <lib/string.h>
 
 static list_t devices;
+int prio[INTERRUPTS];
 
 static void k_device_interrupt_handler ( unsigned int inum, void *device );
 
@@ -84,7 +85,7 @@ int k_device_init ( kdevice_t *kdev, int flags, void *params, void *callback )
 	{
 		(void) arch_register_interrupt_handler ( kdev->dev.irq_num,
 							 k_device_interrupt_handler,
-							 kdev );
+							 kdev, prio[kdev->dev.irq_num] );
 		arch_irq_enable ( kdev->dev.irq_num );
 	}
 

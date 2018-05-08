@@ -31,3 +31,4 @@ arch_ic_t;
 #include <ARCH/drivers/i8259.h>
 
 #define INTERRUPTS		(SOFT_IRQ + 1)
+extern int prio[INTERRUPTS];

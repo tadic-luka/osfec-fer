@@ -13,7 +13,7 @@ extern arch_ic_t IC_DEV;
 static arch_ic_t *icdev = &IC_DEV;
 
 /*! For priority handling */
-static int prio[INTERRUPTS];
+int prio[INTERRUPTS];
 static list_t reqs;
 static int in_process = 0;
 struct request {
@@ -30,6 +30,7 @@ static list_t ihandlers[INTERRUPTS];
 
 struct ihndlr
 {
+	int priority;
 	void *device;
 	int (*ihandler) ( unsigned int, void *device );
 
@@ -41,11 +42,11 @@ int cmp_reqs_by_priority(void *a, void *b)
 	struct request *req_a = (struct request *)a;
 	struct request *req_b = (struct request *)b;
 
-	if(prio[req_a->irq] < prio[req_b->irq])
+	if(req_a->priority < req_b->priority)
 		return -1;
-	if(prio[req_a->irq] == prio[req_b->irq])
-		return 1;
-	return 0;
+	if(req_a->priority == req_b->priority)
+		return 0;
+	return 1;
 }
 /*! Initialize interrupt subsystem (in 'arch' layer) */
 void arch_init_interrupts ()
@@ -78,7 +79,7 @@ void arch_irq_disable ( unsigned int irq )
 
 /*! Register handler function for particular interrupt number */
 void arch_register_interrupt_handler ( unsigned int inum, void *handler,
-				       void *device )
+				       void *device, int priority )
 {
 	struct ihndlr *ih;
 	if ( inum < INTERRUPTS )
@@ -89,6 +90,7 @@ void arch_register_interrupt_handler ( unsigned int inum, void *handler,
 
 		ih->device = device;
 		ih->ihandler = handler;
+		ih->priority = priority;
 
 		list_append ( &ihandlers[inum], ih, &ih->list );
 	}
@@ -145,12 +147,13 @@ void arch_interrupt_handler ( int irq_num )
 				break;
 			/*ASSERT( req );*/
 
-			req->priority = prio[irq_num];
+			/*req->priority = prio[irq_num];*/
+			req->priority = ih->priority;
 			req->in_process = 0;
 			req->device = ih->device;
 			req->ihandler = ih->ihandler;
 			req->irq = irq_num;
-			LOG(INFO, "REQ %d inserted, in_process: %d", irq_num, in_process);
+			LOG(INFO, "REQ %d inserted, priority: %d, in_process: %d", irq_num, req->priority, in_process);
 
 			list_sort_add (&reqs , req, &req->list, cmp_reqs_by_priority );
 
@@ -158,7 +161,7 @@ void arch_interrupt_handler ( int irq_num )
 		}
 
 		while((req = list_get(&reqs, FIRST)) && req->in_process == 0) {
-			/*LOG(DEBUG, "GOT req with irq: %d, prio: %d", req->irq, req->priority);*/
+			LOG(DEBUG, "from list GOT req with irq: %d, prio: %d", req->irq, req->priority);
 			req->in_process = 1;
 			++in_process;
 			LOG(INFO, "Handling irq %d, in process: %d", req->irq, in_process);
@@ -169,28 +172,18 @@ void arch_interrupt_handler ( int irq_num )
 			disable_interrupts();
 			req->in_process = 0;
 			req = list_remove(&reqs, FIRST, NULL);
-			if( req ) {
-				--in_process;
-			LOG(INFO, "Handler irq %d, in process: %d", req->irq, in_process);
-				kfree(req);
-				req = NULL;
-			}
-		}
-		if(req) {
 			--in_process;
-			LOG(INFO, "Handler irq %d, in process: %d", req->irq, in_process);
-			list_remove(&reqs, FIRST, NULL);
+			LOG(INFO, "Handled irq %d, in process: %d", req->irq, in_process);
+
 			kfree(req);
+			req = NULL;
 		}
-		/*arch_irq_disable(irq_num);*/
-		/*arch_irq_enable(irq_num);*/
-			/*disable_interrupts();*/
 	}
 
 	else if ( irq_num < INTERRUPTS )
 	{
 		LOG ( ERROR, "Unregistered interrupt: %d - %s!\n",
-		      irq_num, icdev->int_descr ( irq_num ) );
+				irq_num, icdev->int_descr ( irq_num ) );
 		halt ();
 	}
 	else {
