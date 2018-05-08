@@ -173,7 +173,14 @@ void arch_interrupt_handler ( int irq_num )
 				--in_process;
 			LOG(INFO, "Handler irq %d, in process: %d", req->irq, in_process);
 				kfree(req);
+				req = NULL;
 			}
+		}
+		if(req) {
+			--in_process;
+			LOG(INFO, "Handler irq %d, in process: %d", req->irq, in_process);
+			list_remove(&reqs, FIRST, NULL);
+			kfree(req);
 		}
 		/*arch_irq_disable(irq_num);*/
 		/*arch_irq_enable(irq_num);*/
