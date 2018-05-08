@@ -13,8 +13,15 @@
 #include "test/test.h"
 #endif
 #include <types/basic.h>
-#define INKREMENT 32
+#define INCREMENT 32
+#define LOG2_INCR msb_index(INCREMENT)
+//#define N (8 * sizeof(int) - LOG2_INCR)
 #define N 32
+
+#define IND_PUT(SIZE)	((SIZE) < (INCREMENT) ? 0 : 1 + msb_index (SIZE) - LOG2_INCR)
+#define IND_GET(SIZE)	( 1 + IND_PUT ( (SIZE) -1 ) )
+
+
 
 
 #ifndef _FF_SIMPLE_C_
