@@ -57,8 +57,8 @@ void k_startup ()
 
 	/* start desired program(s) */
 	hello_world ();
-	keyboard ();
-	timer ();
+	/*keyboard ();*/
+	/*timer ();*/
 	/* segm_fault (); */
 
 	kprintf ( "\nSystem halted!\n" );

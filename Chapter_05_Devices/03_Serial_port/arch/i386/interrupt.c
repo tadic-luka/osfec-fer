@@ -41,9 +41,9 @@ int cmp_reqs_by_priority(void *a, void *b)
 	struct request *req_a = (struct request *)a;
 	struct request *req_b = (struct request *)b;
 
-	if(req_a->priority < req_b->priority)
+	if(prio[req_a->irq] < prio[req_b->irq])
 		return -1;
-	if(req_a->priority == req_b->priority)
+	if(prio[req_a->irq] == prio[req_b->irq])
 		return 1;
 	return 0;
 }
@@ -83,6 +83,7 @@ void arch_register_interrupt_handler ( unsigned int inum, void *handler,
 	struct ihndlr *ih;
 	if ( inum < INTERRUPTS )
 	{
+		LOG ( DEBUG, "REGISTERING %d!\n", inum );
 		ih = kmalloc ( sizeof (struct ihndlr) );
 		ASSERT ( ih );
 
@@ -129,7 +130,7 @@ void arch_interrupt_handler ( int irq_num )
 	struct request *req;
 	if ( irq_num < INTERRUPTS && (ih = list_get (&ihandlers[irq_num], FIRST)) )
 	{
-		LOG ( INFO, "IRQ: %d", irq_num);
+		LOG ( INFO, "Interrupt: %d", irq_num);
 		/* enable interrupts on PIC immediately since program may not
 		 * return here immediately */
 		if ( icdev->at_exit )
@@ -140,7 +141,9 @@ void arch_interrupt_handler ( int irq_num )
 		{
 			/*ih->ihandler ( irq_num, ih->device );*/
 			req = kmalloc( sizeof(struct request) + 100000);
-			ASSERT( req );
+			if(req == NULL)
+				break;
+			/*ASSERT( req );*/
 
 			req->priority = prio[irq_num];
 			req->in_process = 0;
@@ -158,15 +161,17 @@ void arch_interrupt_handler ( int irq_num )
 			/*LOG(DEBUG, "GOT req with irq: %d, prio: %d", req->irq, req->priority);*/
 			req->in_process = 1;
 			++in_process;
+			LOG(INFO, "Handling irq %d, in process: %d", req->irq, in_process);
 			enable_interrupts();
 			/*arch_irq_enable(req->irq);*/
 			req->ihandler(req->irq, req->device);
 			/*arch_irq_disable(req->irq);*/
 			disable_interrupts();
+			req->in_process = 0;
 			req = list_remove(&reqs, FIRST, NULL);
 			if( req ) {
-				LOG(INGO, "REQ %d removed", req->irq);
 				--in_process;
+			LOG(INFO, "Handler irq %d, in process: %d", req->irq, in_process);
 				kfree(req);
 			}
 		}
