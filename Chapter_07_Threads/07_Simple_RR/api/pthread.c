@@ -200,6 +200,24 @@ int sem_wait ( sem_t *sem )
 	return sys__sem_wait ( sem );
 }
 
+/*! Barrier */
+int pthread_barrier_init(pthread_barrier_t *barrier, unsigned count)
+{
+	ASSERT_ERRNO_AND_RETURN ( barrier, EINVAL );
+	ASSERT_ERRNO_AND_RETURN (count > 0, EINVAL);
+	return sys__pthread_barrier_init(barrier, count);
+}
+int pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+	ASSERT_ERRNO_AND_RETURN ( barrier, EINVAL );
+	return sys__pthread_barrier_destroy(barrier);
+}
+int pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+	ASSERT_ERRNO_AND_RETURN ( barrier, EINVAL );
+	return sys__pthread_barrier_wait(barrier);
+}
+
 /*! Message queue */
 mqd_t mq_open ( char *name, int oflag, mode_t mode, struct mq_attr *attr )
 {

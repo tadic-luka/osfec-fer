@@ -612,8 +612,6 @@ int sys__sem_init ( sem_t *sem, int pshared, int value )
 	ksem->ref_cnt = 1;
 	kthreadq_init ( &ksem->queue );
 
-	if ( pshared )
-		ksem->flags |= PTHREAD_PROCESS_SHARED;
 
 	sem->ptr = kobj;
 	sem->id = ksem->id;
@@ -742,6 +740,128 @@ int sys__sem_post ( sem_t *sem )
 	SYS_EXIT ( kthread_get_errno(NULL), kthread_get_syscall_retval(NULL) );
 }
 
+/*! Barrier ----------------------------------------------------------------- */
+
+/*!
+ * Initialize barrier object
+ * \param barrier Barrier descriptor (user level descriptor)
+ * \param count Number of threads that must call pthread_barrier_wait before any
+ * of then successfully return from the call
+ * \return 0 if successful, -1 otherwise and appropriate error number is set
+ */
+int sys__pthread_barrier_init(pthread_barrier_t *barrier, unsigned count)
+{
+	kbarrier_t *kbarrier;
+	kobject_t *kobj;
+
+	SYS_ENTRY();
+
+	ASSERT_ERRNO_AND_EXIT ( barrier, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( count > 0, EINVAL );
+
+	kobj = kmalloc_kobject ( sizeof (kbarrier_t) );
+	ASSERT_ERRNO_AND_EXIT ( kobj, ENOMEM );
+	kbarrier = kobj->kobject;
+
+	kbarrier->id = k_new_id ();
+	kbarrier->barrier_value = 0;
+	kbarrier->last_lock = NULL;
+	kbarrier->barrier_count = count;
+	/*kbarrier->flags = 0;*/
+	kbarrier->ref_cnt = 1;
+	kthreadq_init ( &kbarrier->queue );
+
+	/*if ( pshared )*/
+		/*ksem->flags |= PTHREAD_PROCESS_SHARED;*/
+
+	barrier->ptr = kobj;
+	barrier->id = kbarrier->id;
+
+	SYS_EXIT ( EXIT_SUCCESS, EXIT_SUCCESS );
+	/*return 0;*/
+}
+
+int sys__pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+	kbarrier_t *kbarrier;
+	kobject_t *kobj;
+
+	SYS_ENTRY();
+
+	ASSERT_ERRNO_AND_EXIT ( barrier, EINVAL );
+
+	kobj = barrier->ptr;
+	ASSERT_ERRNO_AND_EXIT ( kobj, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( list_find ( &kobjects, &kobj->list ),
+				EINVAL );
+	kbarrier = kobj->kobject;
+	ASSERT_ERRNO_AND_EXIT ( kbarrier && kbarrier->id == kbarrier->id, EINVAL );
+
+	ASSERT_ERRNO_AND_EXIT (kthreadq_get (&kbarrier->queue) == NULL, ENOTEMPTY);
+
+	kbarrier->ref_cnt--;
+
+	/* additional cleanup here (e.g. if semaphore is shared leave it) */
+	if ( kbarrier->ref_cnt )
+		SYS_EXIT ( EBUSY, EXIT_FAILURE );
+
+	kfree_kobject ( kobj );
+
+	barrier->ptr = NULL;
+	barrier->id = 0;
+
+	SYS_EXIT ( EXIT_SUCCESS, EXIT_SUCCESS );
+	/*return 0;*/
+}
+
+int sys__pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+	kbarrier_t *kbarrier;
+	kobject_t *kobj;
+	kthread_t *kthread;
+
+	SYS_ENTRY();
+
+	ASSERT_ERRNO_AND_EXIT ( barrier, EINVAL );
+
+	kthread = kthread_get_active ();
+
+	kobj = barrier->ptr;
+	ASSERT_ERRNO_AND_EXIT ( kobj, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( list_find ( &kobjects, &kobj->list ),
+				EINVAL );
+	kbarrier = kobj->kobject;
+	ASSERT_ERRNO_AND_EXIT ( kbarrier && kbarrier->id == barrier->id, EINVAL );
+
+	kthread_set_errno ( kthread, EXIT_SUCCESS );
+	if(kbarrier->barrier_value == 0) {
+		LOG(DEBUG, "stavio pthread_barrier_serial_thread %d", PTHREAD_BARRIER_SERIAL_THREAD);
+		kthread_set_syscall_retval ( kthread, PTHREAD_BARRIER_SERIAL_THREAD );
+	}
+	else {
+		kthread_set_syscall_retval ( kthread, EXIT_SUCCESS );
+	}
+
+	kbarrier->barrier_value++;
+	if ( kbarrier->barrier_value >= kbarrier->barrier_count )
+	{
+		LOG(DEBUG, "POPUNIO BARRIER VALUE");
+		kbarrier->barrier_value = 0;
+		/*kbarrier->barrier_value--;*/
+		kbarrier->last_lock = kthread;
+		/*kthreads_schedule ();*/
+	}
+	else {
+		LOG(DEBUG, "Put into thread queue, and using another thread");
+		kthread_enqueue ( kthread, &kbarrier->queue, 1, NULL, NULL );
+		kthreads_schedule ();
+	}
+
+	SYS_EXIT ( kthread_get_errno(NULL), kthread_get_syscall_retval(NULL) );
+	/*return 0;*/
+}
+
+
 /*! Messages ---------------------------------------------------------------- */
 
 /* list of message queues */
@@ -757,7 +877,7 @@ static list_t kmq_queue = LIST_T_NULL;
  * \return 0 if successful, -1 otherwise and appropriate error number is set
  */
 int sys__mq_open ( char *name, int oflag, mode_t mode, mq_attr_t *attr,
-		   mqd_t *mqdes )
+		mqd_t *mqdes )
 {
 	kmq_queue_t *kq_queue;
 	kobject_t *kobj;
@@ -770,11 +890,11 @@ int sys__mq_open ( char *name, int oflag, mode_t mode, mq_attr_t *attr,
 
 	kq_queue = list_get ( &kmq_queue, FIRST );
 	while ( kq_queue &&
-		strcmp ( name, kq_queue->name ) )
+			strcmp ( name, kq_queue->name ) )
 		kq_queue = list_get_next ( &kq_queue->list );
 
 	if (	( kq_queue && ( (oflag & O_CREAT) || (oflag & O_EXCL) ) )
-		|| ( !kq_queue && !(oflag & O_CREAT ) ) )
+			|| ( !kq_queue && !(oflag & O_CREAT ) ) )
 	{
 		mqdes->ptr = (void *) -1;
 		mqdes->id = -1;
@@ -834,7 +954,7 @@ int sys__mq_close ( mqd_t *mqdes )
 	kobj = mqdes->ptr;
 	ASSERT_ERRNO_AND_EXIT ( kobj, EBADF );
 	ASSERT_ERRNO_AND_EXIT ( list_find ( &kobjects, &kobj->list ),
-				EBADF );
+			EBADF );
 
 	kq_queue = kobj->kobject;
 	kq_queue = list_find_and_remove ( &kmq_queue, &kq_queue->list );
@@ -905,12 +1025,12 @@ int sys__mq_send ( mqd_t *mqdes, char *msg_ptr, size_t msg_len, uint msg_prio )
 	kobj = mqdes->ptr;
 	ASSERT_ERRNO_AND_EXIT ( kobj, EBADF );
 	ASSERT_ERRNO_AND_EXIT ( list_find ( &kobjects, &kobj->list ),
-				EBADF );
+			EBADF );
 
 	kq_queue = kobj->kobject;
 	ASSERT_ERRNO_AND_EXIT ( kq_queue->id == mqdes->id, EBADF );
 	ASSERT_ERRNO_AND_EXIT ( list_find ( &kmq_queue, &kq_queue->list ),
-				EBADF );
+			EBADF );
 
 	while ( kq_queue->attr.mq_curmsgs >= kq_queue->attr.mq_maxmsg )
 	{
@@ -926,7 +1046,7 @@ int sys__mq_send ( mqd_t *mqdes, char *msg_ptr, size_t msg_len, uint msg_prio )
 
 		if ( kthread_get_errno (NULL) != EAGAIN )
 			SYS_EXIT ( kthread_get_errno (NULL),
-				   kthread_get_syscall_retval (NULL) );
+					kthread_get_syscall_retval (NULL) );
 	}
 
 	if ( msg_len > kq_queue->attr.mq_msgsize )
@@ -985,12 +1105,12 @@ int sys__mq_receive (mqd_t *mqdes,char *msg_ptr,size_t msg_len,uint *msg_prio)
 	kobj = mqdes->ptr;
 	ASSERT_ERRNO_AND_EXIT ( kobj, -EBADF );
 	ASSERT_ERRNO_AND_EXIT ( list_find ( &kobjects, &kobj->list ),
-				-EBADF );
+			-EBADF );
 
 	kq_queue = kobj->kobject;
 	ASSERT_ERRNO_AND_EXIT ( kq_queue->id == mqdes->id, -EBADF );
 	ASSERT_ERRNO_AND_EXIT ( list_find ( &kmq_queue, &kq_queue->list ),
-				-EBADF );
+			-EBADF );
 
 	while ( kq_queue->attr.mq_curmsgs == 0 )
 	{
@@ -1006,7 +1126,7 @@ int sys__mq_receive (mqd_t *mqdes,char *msg_ptr,size_t msg_len,uint *msg_prio)
 
 		if ( kthread_get_errno (NULL) != EAGAIN )
 			SYS_EXIT ( kthread_get_errno (NULL),
-				   kthread_get_syscall_retval (NULL) );
+					kthread_get_syscall_retval (NULL) );
 	}
 
 	if ( msg_len < kq_queue->attr.mq_msgsize )

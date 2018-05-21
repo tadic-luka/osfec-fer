@@ -70,6 +70,32 @@ typedef struct _ksem_t_
 ksem_t;
 
 
+/*! barriers -------------------------------------------------------------- */
+
+typedef struct _kbarrier_t_
+{
+	id_t	    id;
+		    /* system level id */
+
+	int	    barrier_value;
+		    /* current barrier value */
+
+	int 	    barrier_count;
+		    /*  barrier count  */
+	kthread_t  *last_lock;
+		   /* thread that last called sem_wait and wasn't blocked */
+
+	//uint	    flags;
+		    /* various flags */
+
+	uint	    ref_cnt;
+		    /* various flags */
+
+	kthread_q   queue;
+		    /* queue for blocked threads */
+}
+kbarrier_t;
+
 /*! Messages ---------------------------------------------------------------- */
 
 /*! message */

@@ -53,6 +53,9 @@ typedef uint pthread_mutexattr_t;
 #define	PTHREAD_PROCESS_SHARED		(1<<6)
 #define	PTHREAD_PROCESS_PRIVATE		(1<<7)
 
+/*! Barriers constant */
+#define PTHREAD_BARRIER_SERIAL_THREAD	122
+
 /*! Condition variable */
 typedef descriptor_t pthread_cond_t;
 
@@ -64,6 +67,9 @@ typedef descriptor_t sem_t;
 
 /*! Message queue */
 typedef descriptor_t mqd_t;
+
+/*! Barrier */
+typedef descriptor_t pthread_barrier_t;
 
 /*! Message queue parameters */
 typedef struct mq_attr

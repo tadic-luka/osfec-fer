@@ -50,6 +50,11 @@ int sem_destroy ( sem_t *sem );
 int sem_post ( sem_t *sem );
 int sem_wait ( sem_t *sem );
 
+/*! Barrier */
+int pthread_barrier_init(pthread_barrier_t *barrier, unsigned count);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+int pthread_barrier_wait(pthread_barrier_t *barrier);
+
 /*! Message queue */
 mqd_t mq_open ( char *name, int oflag, mode_t mode, struct mq_attr *attr );
 int mq_close ( mqd_t mqdes );
